@@ -37,6 +37,19 @@ function getDisplayDate(project) {
     return project.projectDate || project.createdAt;
 }
 
+function parseProjectDate(dateString) {
+    if (!dateString) return null;
+
+    const dateOnlyMatch = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (dateOnlyMatch) {
+        const [, year, month, day] = dateOnlyMatch;
+        return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+
+    const parsed = new Date(dateString);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 // Initialize AOS
 AOS.init({
     duration: 800,
@@ -91,21 +104,15 @@ function showToast(message, type = "success") {
     }, 3000);
 }
 
-// Format Date
 function formatDate(dateString) {
-    if (!dateString) return "Date not set";
+    const date = parseProjectDate(dateString);
+    if (!date) return "Date not set";
 
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return "Date not set";
-
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+    });
 }
 
 // Modal Functions
@@ -150,7 +157,7 @@ function openDetailModal(project) {
             </div>
             <div class="form-group">
                 <label class="form-label">Created</label>
-                <p style="color: var(--gray-500);">${new Date(getDisplayDate(project)).toLocaleDateString()}</p>
+                <p style="color: var(--gray-500);">${formatDate(getDisplayDate(project))}</p>
             </div>
         </div>
     `;
