@@ -1,4 +1,4 @@
-const API_BASE = "/api/projects";
+const API_BASE = "http://localhost:4000/api/projects";
 
 const galleryContainer = document.getElementById("galleryContainer");
 const cardTemplate = document.getElementById("projectCardTemplate");
