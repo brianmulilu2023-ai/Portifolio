@@ -2,132 +2,337 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design Attachment Portfolio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Design Studio | Creative Portfolio</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    <link rel="stylesheet" href="./styles.css">
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <div class="page-shell">
-        <header class="hero">
-            <div class="hero-copy">
-                <p class="eyebrow">Graphic Designer Portfolio</p>
-                <h1>Show your work, upload projects, and keep every project image safely linked to your database.</h1>
-                <p class="hero-text">
-                    This portfolio is built for attachment applications. Your artwork images are uploaded to Supabase
-                    Storage, then the image URL and project details are saved in MongoDB through a TypeScript backend.
-                </p>
-                <div class="hero-actions">
-                    <button class="primary-button" id="openUploadBtn" type="button">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        Add Project
-                    </button>
-                    <a class="ghost-button" href="#projectsSection">View Portfolio</a>
-                </div>
-            </div>
-            <aside class="hero-panel">
-                <div class="metric-card">
-                    <span>Frontend</span>
-                    <strong>HTML + CSS + JS</strong>
-                </div>
-                <div class="metric-card">
-                    <span>Backend</span>
-                    <strong>TypeScript + Express</strong>
-                </div>
-                <div class="metric-card">
-                    <span>Storage</span>
-                    <strong>Supabase + MongoDB</strong>
-                </div>
-            </aside>
-        </header>
-
-        <main>
-            <section class="section-header" id="projectsSection">
-                <div>
-                    <p class="section-label">Portfolio Gallery</p>
-                    <h2>Uploaded design projects</h2>
-                </div>
-                <p class="section-text">Each project card is loaded from the backend API after the image URL has been stored in your database.</p>
-            </section>
-
-            <section id="galleryContainer" class="projects-grid" aria-live="polite">
-                <div class="empty-state">Loading projects...</div>
-            </section>
-        </main>
+    <!-- Loading Screen -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-ring"></div>
+            <p>Loading portfolio...</p>
+        </div>
     </div>
 
-    <div class="modal" id="uploadModal" aria-hidden="true">
-        <div class="modal-card">
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fa-solid fa-bezier-curve"></i>
+                <span>Creative Studio</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">Work</a>
+                <a href="#about" class="nav-link">About</a>
+                <button class="btn-primary" id="openUploadBtn">
+                    <i class="fa-solid fa-plus"></i>
+                    Upload Project
+                </button>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-grid">
+                <div class="hero-content" data-aos="fade-up" data-aos-duration="800">
+                    <div class="hero-badge">
+                        <i class="fa-regular fa-star"></i>
+                        Graphic Designer Portfolio
+                    </div>
+                    <h1 class="hero-title">
+                        Creating visual <span class="gradient-text">stories</span> that inspire
+                    </h1>
+                    <p class="hero-description">
+                        I craft meaningful design experiences through branding, illustration, 
+                        and digital art. Each project tells a unique story.
+                    </p>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <span class="stat-number">50+</span>
+                            <span class="stat-label">Projects Completed</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">30+</span>
+                            <span class="stat-label">Happy Clients</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">8+</span>
+                            <span class="stat-label">Years Experience</span>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn-primary" id="heroUploadBtn">
+                            <i class="fa-solid fa-cloud-upload-alt"></i>
+                            Upload Your Work
+                        </button>
+                        <a href="#portfolio" class="btn-secondary">
+                            <i class="fa-regular fa-eye"></i>
+                            View Portfolio
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-visual" data-aos="fade-left" data-aos-duration="800">
+                    <div class="floating-shape shape-1"></div>
+                    <div class="floating-shape shape-2"></div>
+                    <div class="floating-shape shape-3"></div>
+                    <div class="hero-image-wrapper">
+                        <div class="hero-image-placeholder">
+                            <i class="fa-solid fa-palette"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section class="portfolio" id="portfolio">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <div class="section-tag">
+                    <i class="fa-regular fa-grid-2"></i>
+                    Portfolio Gallery
+                </div>
+                <h2 class="section-title">Featured <span class="gradient-text">Projects</span></h2>
+                <p class="section-description">
+                    Explore my latest creative works, from branding to digital illustrations
+                </p>
+                <div class="filter-tabs" id="filterTabs">
+                    <button class="filter-btn active" data-filter="all">All Projects</button>
+                    <button class="filter-btn" data-filter="Branding">Branding</button>
+                    <button class="filter-btn" data-filter="Illustration">Illustration</button>
+                    <button class="filter-btn" data-filter="UI/UX">UI/UX</button>
+                    <button class="filter-btn" data-filter="Poster">Poster</button>
+                </div>
+            </div>
+
+            <div class="projects-grid" id="galleryContainer">
+                <div class="loading-state">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <p>Loading creative works...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-content" data-aos="fade-right">
+                    <div class="section-tag">
+                        <i class="fa-regular fa-user"></i>
+                        About The Designer
+                    </div>
+                    <h2 class="section-title">Passionate about <span class="gradient-text">visual communication</span></h2>
+                    <p class="about-text">
+                        I'm a graphic designer with a passion for creating impactful visual experiences. 
+                        My work focuses on minimalism, typography, and storytelling through design.
+                    </p>
+                    <div class="skills">
+                        <div class="skill-tag">Brand Identity</div>
+                        <div class="skill-tag">Typography</div>
+                        <div class="skill-tag">Illustration</div>
+                        <div class="skill-tag">UI/UX Design</div>
+                        <div class="skill-tag">Motion Graphics</div>
+                        <div class="skill-tag">Print Design</div>
+                    </div>
+                </div>
+                <div class="about-stats" data-aos="fade-left">
+                    <div class="stat-card">
+                        <i class="fa-regular fa-clock"></i>
+                        <div class="stat-info">
+                            <span class="stat-number">Fast Turnaround</span>
+                            <span class="stat-label">2-5 days average</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fa-regular fa-message"></i>
+                        <div class="stat-info">
+                            <span class="stat-number">24/7 Support</span>
+                            <span class="stat-label">Always responsive</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fa-regular fa-gem"></i>
+                        <div class="stat-info">
+                            <span class="stat-number">Premium Quality</span>
+                            <span class="stat-label">High-res deliverables</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-container" data-aos="zoom-in">
             <div class="modal-header">
                 <div>
-                    <p class="section-label">New Project</p>
-                    <h3>Upload portfolio work</h3>
+                    <div class="modal-tag">Upload New Project</div>
+                    <h3 class="modal-title">Share your creative work</h3>
                 </div>
-                <button class="icon-button" id="closeModalBtn" type="button" aria-label="Close upload form">
+                <button class="modal-close" id="closeModalBtn">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-
+            
             <form id="uploadForm" class="upload-form">
-                <label class="field">
-                    <span>Project title</span>
-                    <input id="title" name="title" type="text" placeholder="Brand identity redesign" required>
-                </label>
-
-                <label class="field">
-                    <span>Category</span>
-                    <input id="category" name="category" type="text" placeholder="Poster, Branding, UI, Social Media">
-                </label>
-
-                <label class="field">
-                    <span>Description</span>
-                    <textarea id="description" name="description" placeholder="Describe the client brief, your design process, and tools used."></textarea>
-                </label>
-
-                <label class="field">
-                    <span>Project image</span>
-                    <div class="dropzone" id="dropArea">
-                        <input id="fileInput" name="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-                        <i class="fa-regular fa-image"></i>
-                        <strong>Choose an image or drag it here</strong>
-                        <small id="fileNameDisplay">PNG, JPG, WEBP, or GIF</small>
-                    </div>
-                </label>
-
-                <div class="progress" id="uploadProgress" hidden>
-                    <div class="progress-fill" id="progressFill"></div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fa-regular fa-heading"></i>
+                        Project Title *
+                    </label>
+                    <input type="text" id="title" class="form-input" 
+                           placeholder="e.g., Brand Identity for Tech Startup" required>
                 </div>
 
-                <div class="form-actions">
-                    <button class="ghost-button" id="cancelUploadBtn" type="button">Cancel</button>
-                    <button class="primary-button" id="submitUploadBtn" type="submit">Publish Project</button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fa-regular fa-tag"></i>
+                            Category
+                        </label>
+                        <select id="category" class="form-select">
+                            <option value="">Select category</option>
+                            <option value="Branding">Branding</option>
+                            <option value="Illustration">Illustration</option>
+                            <option value="UI/UX">UI/UX</option>
+                            <option value="Poster">Poster</option>
+                            <option value="Typography">Typography</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fa-regular fa-calendar"></i>
+                            Project Date
+                        </label>
+                        <input
+                            type="date"
+                            id="projectDate"
+                            class="form-input"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fa-regular fa-align-left"></i>
+                        Description
+                    </label>
+                    <textarea id="description" class="form-textarea" rows="4"
+                              placeholder="Describe your creative process, tools used, and the project's impact..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fa-regular fa-image"></i>
+                        Project Image *
+                    </label>
+                    <div class="dropzone" id="dropArea">
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                        <div class="dropzone-content">
+                            <i class="fa-regular fa-cloud-upload"></i>
+                            <div class="dropzone-text">
+                                <strong>Drag & drop your image here</strong>
+                                <span>or click to browse</span>
+                            </div>
+                            <small class="file-info" id="fileNameDisplay">
+                                PNG, JPG, WEBP, or GIF (Max 10MB)
+                            </small>
+                        </div>
+                        <div class="image-preview" id="imagePreview" style="display: none;">
+                            <img id="previewImg" alt="Preview">
+                            <button type="button" class="remove-image" id="removeImageBtn">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-container" id="uploadProgress" style="display: none;">
+                    <div class="progress-label">Uploading...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-percent" id="progressPercent">0%</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelUploadBtn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary" id="submitUploadBtn">
+                        <i class="fa-regular fa-paper-plane"></i>
+                        Publish Project
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Project Detail Modal -->
+    <div class="modal" id="detailModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-container modal-large" id="detailContent">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Templates -->
     <template id="projectCardTemplate">
-        <article class="project-card">
-            <img class="project-image" alt="">
-            <div class="project-content">
-                <div class="project-topline">
-                    <span class="project-category"></span>
-                    <button class="delete-button" type="button" aria-label="Delete project">
-                        <i class="fa-regular fa-trash-can"></i>
+        <div class="project-card" data-aos="fade-up" data-aos-duration="600">
+            <div class="card-image-wrapper">
+                <img class="project-image" alt="">
+                <div class="card-overlay">
+                    <button class="view-project-btn">
+                        <i class="fa-regular fa-eye"></i>
+                        View Project
                     </button>
+                    <button class="delete-project-btn">
+                        <i class="fa-regular fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="card-header">
+                    <span class="project-category"></span>
                 </div>
                 <h3 class="project-title"></h3>
                 <p class="project-description"></p>
-                <div class="project-footer">
-                    <span class="project-date"></span>
+                <div class="card-footer">
+                    <span class="project-date">
+                        <i class="fa-regular fa-calendar-alt"></i>
+                    </span>
                 </div>
             </div>
-        </article>
+        </div>
     </template>
 
-    <script src="./app.js" defer></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

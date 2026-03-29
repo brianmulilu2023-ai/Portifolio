@@ -4,6 +4,7 @@ export interface ProjectDocument {
     title: string;
     category?: string;
     description?: string;
+    projectDate: Date;
     imageUrl: string;
     storagePath: string;
     createdAt: Date;
@@ -26,6 +27,10 @@ const projectSchema = new Schema<ProjectDocument>(
             type: String,
             trim: true,
             default: ""
+        },
+        projectDate: {
+            type: Date,
+            required: true
         },
         imageUrl: {
             type: String,

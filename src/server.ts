@@ -7,7 +7,6 @@ import mongoose from "mongoose";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import { Project } from "./models/Project";
-import { Console } from "console";
 
 dotenv.config();
 
@@ -87,6 +86,7 @@ app.get(
         title: project.title,
         category: project.category,
         description: project.description,
+        projectDate: project.projectDate,
         imageUrl: project.imageUrl,
         storagePath: project.storagePath,
         createdAt: project.createdAt,
@@ -104,9 +104,21 @@ app.post(
     const title = request.body.title?.trim();
     const category = request.body.category?.trim() || "";
     const description = request.body.description?.trim() || "";
+    const projectDateInput = request.body.projectDate?.trim();
 
     if (!title) {
       response.status(400).json({ error: "Project title is required." });
+      return;
+    }
+
+    if (!projectDateInput) {
+      response.status(400).json({ error: "Project date is required." });
+      return;
+    }
+
+    const projectDate = new Date(projectDateInput);
+    if (Number.isNaN(projectDate.getTime())) {
+      response.status(400).json({ error: "Project date is invalid." });
       return;
     }
 
@@ -142,6 +154,7 @@ app.post(
       title,
       category,
       description,
+      projectDate,
       imageUrl,
       storagePath,
     });
@@ -153,6 +166,7 @@ app.post(
         title: savedProject.title,
         category: savedProject.category,
         description: savedProject.description,
+        projectDate: savedProject.projectDate,
         imageUrl: savedProject.imageUrl,
         storagePath: savedProject.storagePath,
         createdAt: savedProject.createdAt,
@@ -185,7 +199,6 @@ app.delete(
     response.json({ message: "Project deleted successfully." });
   }),
 );
-
 app.use(
   (
     error: Error,
