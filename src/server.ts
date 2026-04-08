@@ -1,5 +1,5 @@
 import path from "path";
-import { randomUUID } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -15,12 +15,18 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET;
+const OWNER_PASSWORD = process.env.OWNER_PASSWORD;
+const OWNER_SESSION_SECRET =
+  process.env.OWNER_SESSION_SECRET || process.env.OWNER_PASSWORD;
+const OWNER_TOKEN_TTL_MS = 1000 * 60 * 60 * 12;
 
 if (
   !MONGODB_URI ||
   !SUPABASE_URL ||
   !SUPABASE_SERVICE_ROLE_KEY ||
-  !SUPABASE_BUCKET
+  !SUPABASE_BUCKET ||
+  !OWNER_PASSWORD ||
+  !OWNER_SESSION_SECRET
 ) {
   throw new Error("Missing environment variables.");
 }
@@ -29,6 +35,8 @@ const mongoUri = MONGODB_URI;
 const supabaseUrl = SUPABASE_URL;
 const supabaseServiceRoleKey = SUPABASE_SERVICE_ROLE_KEY;
 const supabaseBucket = SUPABASE_BUCKET;
+const ownerPassword = OWNER_PASSWORD;
+const ownerSessionSecret = OWNER_SESSION_SECRET;
 
 const app = express();
 const upload = multer({
@@ -61,6 +69,75 @@ function asyncHandler(handler: AsyncHandler) {
   };
 }
 
+function signTokenPayload(payload: string) {
+  return createHmac("sha256", ownerSessionSecret).update(payload).digest("hex");
+}
+
+function createOwnerToken() {
+  const expiresAt = Date.now() + OWNER_TOKEN_TTL_MS;
+  const payload = `owner:${expiresAt}`;
+  const signature = signTokenPayload(payload);
+  return Buffer.from(`${payload}.${signature}`).toString("base64url");
+}
+
+function isValidOwnerToken(token: string | undefined) {
+  if (!token) return false;
+
+  let decoded = "";
+  try {
+    decoded = Buffer.from(token, "base64url").toString("utf8");
+  } catch (_error) {
+    return false;
+  }
+
+  const separatorIndex = decoded.lastIndexOf(".");
+  if (separatorIndex === -1) return false;
+
+  const payload = decoded.slice(0, separatorIndex);
+  const signature = decoded.slice(separatorIndex + 1);
+  const expectedSignature = signTokenPayload(payload);
+
+  const signatureBuffer = Buffer.from(signature, "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+  if (
+    signatureBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(signatureBuffer, expectedBuffer)
+  ) {
+    return false;
+  }
+
+  const [scope, expiresAtRaw] = payload.split(":");
+  if (scope !== "owner") return false;
+
+  const expiresAt = Number(expiresAtRaw);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) {
+    return false;
+  }
+
+  return true;
+}
+
+function extractBearerToken(request: Request) {
+  const authorization = request.header("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) return undefined;
+  return authorization.slice("Bearer ".length).trim();
+}
+
+function requireOwnerAuth(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) {
+  const token = extractBearerToken(request);
+
+  if (!isValidOwnerToken(token)) {
+    response.status(401).json({ error: "Owner authentication is required." });
+    return;
+  }
+
+  next();
+}
+
 app.use(
   cors({
     origin: "*", // Or specify your frontend URL
@@ -73,6 +150,33 @@ app.use(express.static(publicDirectory));
 
 app.get("/api/health", (_request: Request, response: Response) => {
   response.json({ ok: true });
+});
+
+app.post(
+  "/api/owner/login",
+  asyncHandler(async (request: Request, response: Response) => {
+    const password = request.body.password?.trim();
+
+    if (!password) {
+      response.status(400).json({ error: "Password is required." });
+      return;
+    }
+
+    if (password !== ownerPassword) {
+      response.status(401).json({ error: "Invalid owner password." });
+      return;
+    }
+
+    response.json({
+      message: "Owner login successful.",
+      token: createOwnerToken(),
+      expiresInMs: OWNER_TOKEN_TTL_MS,
+    });
+  }),
+);
+
+app.get("/api/owner/session", (request: Request, response: Response) => {
+  response.json({ authenticated: isValidOwnerToken(extractBearerToken(request)) });
 });
 
 app.get(
@@ -98,6 +202,7 @@ app.get(
 
 app.post(
   "/api/projects",
+  requireOwnerAuth,
   upload.single("file"),
   asyncHandler(async (request: Request, response: Response) => {
     const file = request.file;
@@ -177,6 +282,7 @@ app.post(
 
 app.delete(
   "/api/projects/:id",
+  requireOwnerAuth,
   asyncHandler(async (request: Request, response: Response) => {
     const project = await Project.findById(request.params.id);
 

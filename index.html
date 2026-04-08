@@ -36,9 +36,17 @@
             <div class="nav-links">
                 <a href="#home" class="nav-link active">Work</a>
                 <a href="#about" class="nav-link">About</a>
-                <button class="btn-primary" id="openUploadBtn">
+                <button class="btn-primary" id="ownerLoginBtn">
+                    <i class="fa-solid fa-lock"></i>
+                    Owner Login
+                </button>
+                <button class="btn-secondary owner-only" id="openUploadBtn" hidden>
                     <i class="fa-solid fa-plus"></i>
                     Upload Project
+                </button>
+                <button class="btn-secondary owner-only" id="ownerLogoutBtn" hidden>
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    Logout
                 </button>
             </div>
             <button class="mobile-menu-btn" id="mobileMenuBtn">
@@ -78,9 +86,13 @@
                         </div>
                     </div>
                     <div class="hero-actions">
-                        <button class="btn-primary" id="heroUploadBtn">
+                        <button class="btn-primary" id="heroOwnerBtn">
+                            <i class="fa-solid fa-user-shield"></i>
+                            Owner Access
+                        </button>
+                        <button class="btn-primary owner-only" id="heroUploadBtn" hidden>
                             <i class="fa-solid fa-cloud-upload-alt"></i>
-                            Upload Your Work
+                            Upload Project
                         </button>
                         <a href="#portfolio" class="btn-secondary">
                             <i class="fa-regular fa-eye"></i>
@@ -181,6 +193,49 @@
             </div>
         </div>
     </section>
+
+    <!-- Owner Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-tag">Owner Access</div>
+                    <h3 class="modal-title">Login to manage portfolio projects</h3>
+                </div>
+                <button class="modal-close" id="closeLoginModalBtn">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="loginForm" class="upload-form">
+                <div class="form-group">
+                    <label class="form-label" for="ownerPassword">
+                        <i class="fa-solid fa-lock"></i>
+                        Owner Password
+                    </label>
+                    <input
+                        type="password"
+                        id="ownerPassword"
+                        class="form-input"
+                        placeholder="Enter owner password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelLoginBtn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary" id="submitLoginBtn">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        Login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Upload Modal -->
     <div class="modal" id="uploadModal">
@@ -313,7 +368,7 @@
                         <i class="fa-regular fa-eye"></i>
                         View Project
                     </button>
-                    <button class="delete-project-btn">
+                    <button class="delete-project-btn owner-only" hidden>
                         <i class="fa-regular fa-trash-alt"></i>
                     </button>
                 </div>

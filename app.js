@@ -1,15 +1,27 @@
 // API Configuration
 const API_BASE = "https://portifolio-yohl.onrender.com/api/projects";
+const OWNER_LOGIN_API = "https://portifolio-yohl.onrender.com/api/owner/login";
+const OWNER_SESSION_API = "https://portifolio-yohl.onrender.com/api/owner/session";
+const OWNER_TOKEN_STORAGE_KEY = "portfolioOwnerToken";
 
 // DOM Elements
 const galleryContainer = document.getElementById("galleryContainer");
 const cardTemplate = document.getElementById("projectCardTemplate");
+const loginModal = document.getElementById("loginModal");
 const uploadModal = document.getElementById("uploadModal");
 const detailModal = document.getElementById("detailModal");
+const ownerLoginBtn = document.getElementById("ownerLoginBtn");
+const ownerLogoutBtn = document.getElementById("ownerLogoutBtn");
+const heroOwnerBtn = document.getElementById("heroOwnerBtn");
 const openUploadBtn = document.getElementById("openUploadBtn");
 const heroUploadBtn = document.getElementById("heroUploadBtn");
+const closeLoginModalBtn = document.getElementById("closeLoginModalBtn");
+const cancelLoginBtn = document.getElementById("cancelLoginBtn");
 const closeModalBtn = document.getElementById("closeModalBtn");
 const cancelUploadBtn = document.getElementById("cancelUploadBtn");
+const loginForm = document.getElementById("loginForm");
+const ownerPasswordInput = document.getElementById("ownerPassword");
+const submitLoginBtn = document.getElementById("submitLoginBtn");
 const uploadForm = document.getElementById("uploadForm");
 const titleInput = document.getElementById("title");
 const categoryInput = document.getElementById("category");
@@ -32,6 +44,8 @@ const loader = document.getElementById("loader");
 let selectedFile = null;
 let currentProjects = [];
 let currentFilter = "all";
+let ownerToken = localStorage.getItem(OWNER_TOKEN_STORAGE_KEY) || "";
+let isOwnerAuthenticated = Boolean(ownerToken);
 
 function getDisplayDate(project) {
     return project.projectDate || project.createdAt;
@@ -116,7 +130,27 @@ function formatDate(dateString) {
 }
 
 // Modal Functions
+function openLoginModal() {
+    loginModal.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+    if (ownerPasswordInput) {
+        ownerPasswordInput.value = "";
+        setTimeout(() => ownerPasswordInput.focus(), 50);
+    }
+}
+
+function closeLoginModal() {
+    loginModal.classList.remove("is-open");
+    document.body.style.overflow = "";
+    if (loginForm) loginForm.reset();
+}
+
 function openModal() {
+    if (!isOwnerAuthenticated) {
+        openLoginModal();
+        return;
+    }
+
     if (projectDateInput && !projectDateInput.value) {
         projectDateInput.value = new Date().toISOString().split("T")[0];
     }
@@ -135,6 +169,103 @@ function closeModal() {
     imagePreview.style.display = "none";
     previewImg.src = "";
     document.body.style.overflow = "";
+}
+
+function setOwnerAuth(token) {
+    ownerToken = token;
+    isOwnerAuthenticated = Boolean(token);
+
+    if (token) {
+        localStorage.setItem(OWNER_TOKEN_STORAGE_KEY, token);
+    } else {
+        localStorage.removeItem(OWNER_TOKEN_STORAGE_KEY);
+    }
+
+    updateOwnerUI();
+    filterProjects();
+}
+
+function clearOwnerAuth(showMessage = false) {
+    setOwnerAuth("");
+    closeLoginModal();
+    closeModal();
+    if (showMessage) {
+        showToast("Owner session ended. Please log in again.", "error");
+    }
+}
+
+function updateOwnerUI() {
+    document.querySelectorAll(".owner-only").forEach((element) => {
+        element.hidden = !isOwnerAuthenticated;
+    });
+
+    if (ownerLoginBtn) {
+        ownerLoginBtn.hidden = isOwnerAuthenticated;
+    }
+
+    if (heroOwnerBtn) {
+        heroOwnerBtn.hidden = isOwnerAuthenticated;
+    }
+}
+
+async function validateStoredOwnerSession() {
+    if (!ownerToken) {
+        setOwnerAuth("");
+        return;
+    }
+
+    try {
+        const response = await fetch(OWNER_SESSION_API, {
+            headers: {
+                Authorization: `Bearer ${ownerToken}`
+            }
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.authenticated) {
+            clearOwnerAuth();
+            return;
+        }
+
+        setOwnerAuth(ownerToken);
+    } catch (error) {
+        clearOwnerAuth();
+    }
+}
+
+async function loginOwner(event) {
+    event.preventDefault();
+
+    const password = ownerPasswordInput?.value.trim();
+    if (!password) {
+        showToast("Enter the owner password to continue.", "error");
+        return;
+    }
+
+    submitLoginBtn.disabled = true;
+
+    try {
+        const response = await fetch(OWNER_LOGIN_API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ password })
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || "Owner login failed.");
+        }
+
+        setOwnerAuth(payload.token || "");
+        closeLoginModal();
+        showToast(payload.message || "Owner login successful.");
+    } catch (error) {
+        showToast(error.message || "Owner login failed.", "error");
+    } finally {
+        submitLoginBtn.disabled = false;
+    }
 }
 
 function openDetailModal(project) {
@@ -180,12 +311,15 @@ function openDetailModal(project) {
 // Render Projects
 function renderProjects(projects) {
     if (!projects.length) {
-        galleryContainer.innerHTML = `<div class="empty-state">
+        galleryContainer.innerHTML = isOwnerAuthenticated ? `<div class="empty-state">
             <i class="fa-regular fa-folder-open" style="font-size: 3rem; margin-bottom: var(--space-md);"></i>
             <p>No projects yet. Upload your first design and it will appear here.</p>
             <button class="btn-primary" style="margin-top: var(--space-md);" onclick="document.getElementById('openUploadBtn').click()">
                 Upload Your First Project
             </button>
+        </div>` : `<div class="empty-state">
+            <i class="fa-regular fa-folder-open" style="font-size: 3rem; margin-bottom: var(--space-md);"></i>
+            <p>No projects have been published yet. Check back soon.</p>
         </div>`;
         return;
     }
@@ -210,6 +344,7 @@ function renderProjects(projects) {
         title.textContent = project.title;
         description.textContent = project.description || "No description added for this project yet.";
         date.innerHTML = `<i class="fa-regular fa-calendar-alt"></i> ${formatDate(getDisplayDate(project))}`;
+        deleteButton.hidden = !isOwnerAuthenticated;
         
         deleteButton.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -257,13 +392,28 @@ async function fetchProjects() {
 
 // Delete Project
 async function deleteProject(projectId) {
+    if (!isOwnerAuthenticated || !ownerToken) {
+        openLoginModal();
+        return;
+    }
+
     const confirmed = confirm("Are you sure you want to delete this project? This action cannot be undone.");
     if (!confirmed) return;
     
     try {
-        const response = await fetch(`${API_BASE}/${projectId}`, { method: "DELETE" });
+        const response = await fetch(`${API_BASE}/${projectId}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${ownerToken}`
+            }
+        });
         const payload = await response.json();
         
+        if (response.status === 401) {
+            clearOwnerAuth(true);
+            return;
+        }
+
         if (!response.ok) throw new Error(payload.error || "Could not delete project.");
         
         showToast(payload.message || "Project deleted successfully.");
@@ -316,6 +466,11 @@ function removeImage() {
 // Upload Project
 function uploadProject(event) {
     event.preventDefault();
+
+    if (!isOwnerAuthenticated || !ownerToken) {
+        openLoginModal();
+        return;
+    }
     
     const title = titleInput.value.trim();
     const projectDate = projectDateInput?.value;
@@ -348,6 +503,7 @@ function uploadProject(event) {
     
     const request = new XMLHttpRequest();
     request.open("POST", API_BASE, true);
+    request.setRequestHeader("Authorization", `Bearer ${ownerToken}`);
     
     request.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) {
@@ -367,6 +523,11 @@ function uploadProject(event) {
             payload = {};
         }
         
+        if (request.status === 401) {
+            clearOwnerAuth(true);
+            return;
+        }
+
         if (request.status >= 200 && request.status < 300) {
             showToast(payload.message || "Project uploaded successfully!");
             closeModal();
@@ -415,13 +576,25 @@ fileInput.addEventListener("change", (e) => {
 
 removeImageBtn?.addEventListener("click", removeImage);
 
-openUploadBtn.addEventListener("click", openModal);
+ownerLoginBtn?.addEventListener("click", openLoginModal);
+heroOwnerBtn?.addEventListener("click", openLoginModal);
+ownerLogoutBtn?.addEventListener("click", () => {
+    clearOwnerAuth();
+    showToast("Owner logged out.");
+});
+openUploadBtn?.addEventListener("click", openModal);
 if (heroUploadBtn) heroUploadBtn.addEventListener("click", openModal);
+closeLoginModalBtn?.addEventListener("click", closeLoginModal);
+cancelLoginBtn?.addEventListener("click", closeLoginModal);
+loginModal?.addEventListener("click", (e) => {
+    if (e.target === loginModal) closeLoginModal();
+});
 closeModalBtn.addEventListener("click", closeModal);
 cancelUploadBtn.addEventListener("click", closeModal);
 uploadModal.addEventListener("click", (e) => {
     if (e.target === uploadModal) closeModal();
 });
+loginForm?.addEventListener("submit", loginOwner);
 uploadForm.addEventListener("submit", uploadProject);
 
 // Filter tabs
@@ -464,4 +637,6 @@ if (projectDateInput) {
     projectDateInput.value = new Date().toISOString().split("T")[0];
 }
 
+updateOwnerUI();
+validateStoredOwnerSession();
 fetchProjects();
