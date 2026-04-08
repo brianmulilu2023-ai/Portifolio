@@ -46,6 +46,7 @@ let currentProjects = [];
 let currentFilter = "all";
 let ownerToken = localStorage.getItem(OWNER_TOKEN_STORAGE_KEY) || "";
 let isOwnerAuthenticated = Boolean(ownerToken);
+let pendingOwnerAction = null;
 
 function getDisplayDate(project) {
     return project.projectDate || project.createdAt;
@@ -130,7 +131,8 @@ function formatDate(dateString) {
 }
 
 // Modal Functions
-function openLoginModal() {
+function openLoginModal(nextAction = null) {
+    pendingOwnerAction = nextAction;
     loginModal.classList.add("is-open");
     document.body.style.overflow = "hidden";
     if (ownerPasswordInput) {
@@ -147,7 +149,7 @@ function closeLoginModal() {
 
 function openModal() {
     if (!isOwnerAuthenticated) {
-        openLoginModal();
+        openLoginModal("upload");
         return;
     }
 
@@ -186,6 +188,7 @@ function setOwnerAuth(token) {
 }
 
 function clearOwnerAuth(showMessage = false) {
+    pendingOwnerAction = null;
     setOwnerAuth("");
     closeLoginModal();
     closeModal();
@@ -195,17 +198,21 @@ function clearOwnerAuth(showMessage = false) {
 }
 
 function updateOwnerUI() {
-    document.querySelectorAll(".owner-only").forEach((element) => {
-        element.hidden = !isOwnerAuthenticated;
+    const ownerOnlyElements = [
+        openUploadBtn,
+        heroUploadBtn,
+        ownerLogoutBtn,
+        ...document.querySelectorAll(".delete-project-btn")
+    ];
+
+    ownerOnlyElements.forEach((element) => {
+        if (element) {
+            element.hidden = !isOwnerAuthenticated;
+        }
     });
 
-    if (ownerLoginBtn) {
-        ownerLoginBtn.hidden = isOwnerAuthenticated;
-    }
-
-    if (heroOwnerBtn) {
-        heroOwnerBtn.hidden = isOwnerAuthenticated;
-    }
+    if (ownerLoginBtn) ownerLoginBtn.hidden = isOwnerAuthenticated;
+    if (heroOwnerBtn) heroOwnerBtn.hidden = isOwnerAuthenticated;
 }
 
 async function validateStoredOwnerSession() {
@@ -260,7 +267,19 @@ async function loginOwner(event) {
 
         setOwnerAuth(payload.token || "");
         closeLoginModal();
-        showToast(payload.message || "Owner login successful.");
+
+        const shouldOpenUploadModal = pendingOwnerAction === "upload";
+        pendingOwnerAction = null;
+
+        showToast(
+            shouldOpenUploadModal
+                ? "Owner login successful. Upload controls are ready."
+                : (payload.message || "Owner login successful.")
+        );
+
+        if (shouldOpenUploadModal) {
+            openModal();
+        }
     } catch (error) {
         showToast(error.message || "Owner login failed.", "error");
     } finally {
@@ -576,8 +595,8 @@ fileInput.addEventListener("change", (e) => {
 
 removeImageBtn?.addEventListener("click", removeImage);
 
-ownerLoginBtn?.addEventListener("click", openLoginModal);
-heroOwnerBtn?.addEventListener("click", openLoginModal);
+ownerLoginBtn?.addEventListener("click", () => openLoginModal());
+heroOwnerBtn?.addEventListener("click", () => openLoginModal());
 ownerLogoutBtn?.addEventListener("click", () => {
     clearOwnerAuth();
     showToast("Owner logged out.");

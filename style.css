@@ -5,6 +5,10 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 :root {
     /* Colors */
     --primary: #7C3AED;
