@@ -299,15 +299,23 @@ function openDetailModal(project) {
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-        <div class="upload-form">
-            <img src="${project.imageUrl}" alt="${project.title}" style="width: 100%; border-radius: var(--radius-lg); margin-bottom: var(--space-md);">
-            <div class="form-group">
-                <label class="form-label">Description</label>
-                <p style="color: var(--gray-600); line-height: 1.6;">${escapeHtml(project.description) || "No description provided."}</p>
+        <div class="project-detail-layout">
+            <div class="project-detail-image-panel">
+                <img
+                    src="${project.imageUrl}"
+                    alt="${escapeHtml(project.title)}"
+                    class="project-detail-image"
+                >
             </div>
-            <div class="form-group">
-                <label class="form-label">Created</label>
-                <p style="color: var(--gray-500);">${formatDate(getDisplayDate(project))}</p>
+            <div class="project-detail-meta">
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <p style="color: var(--gray-600); line-height: 1.7;">${escapeHtml(project.description) || "No description provided."}</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Created</label>
+                    <p style="color: var(--gray-500);">${formatDate(getDisplayDate(project))}</p>
+                </div>
             </div>
         </div>
     `;
