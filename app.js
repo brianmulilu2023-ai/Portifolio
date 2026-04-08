@@ -130,6 +130,155 @@ function formatDate(dateString) {
     });
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function sanitizeFileName(value) {
+    return String(value || "project")
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase() || "project";
+}
+
+function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Could not read image data."));
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function getDownloadableImageSource(imageUrl) {
+    try {
+        const response = await fetch(imageUrl, { mode: "cors" });
+        if (!response.ok) {
+            throw new Error("Image download failed.");
+        }
+
+        const blob = await response.blob();
+        const dataUrl = await blobToDataUrl(blob);
+        return typeof dataUrl === "string" ? dataUrl : imageUrl;
+    } catch (_error) {
+        return imageUrl;
+    }
+}
+
+function createProjectPdfCaptureNode(project, imageSource) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "project-pdf-capture";
+    wrapper.innerHTML = `
+        <div class="modal-container modal-large project-pdf-capture-shell">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-tag">${escapeHtml(project.category || "Graphic Design")}</div>
+                    <h3 class="modal-title">${escapeHtml(project.title)}</h3>
+                </div>
+            </div>
+            <div class="project-detail-layout">
+                <div class="project-detail-image-panel">
+                    <img
+                        src="${imageSource}"
+                        alt="${escapeHtml(project.title)}"
+                        class="project-detail-image"
+                    >
+                </div>
+                <div class="project-detail-meta">
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <p style="color: var(--gray-600); line-height: 1.7;">${escapeHtml(project.description) || "No description provided."}</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Created</label>
+                        <p style="color: var(--gray-500);">${formatDate(getDisplayDate(project))}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return wrapper;
+}
+
+function waitForImages(container) {
+    const images = Array.from(container.querySelectorAll("img"));
+    return Promise.all(images.map((image) => {
+        if (image.complete) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+            image.onload = () => resolve();
+            image.onerror = () => resolve();
+        });
+    }));
+}
+
+async function downloadProjectSnapshot(project) {
+    const button = document.getElementById("downloadProjectBtn");
+    if (button) {
+        button.disabled = true;
+    }
+
+    try {
+        if (typeof html2canvas === "undefined" || !window.jspdf?.jsPDF) {
+            throw new Error("PDF export tools are not available.");
+        }
+
+        const imageSource = await getDownloadableImageSource(project.imageUrl);
+        const captureNode = createProjectPdfCaptureNode(project, imageSource);
+        document.body.appendChild(captureNode);
+        await waitForImages(captureNode);
+
+        const canvas = await html2canvas(captureNode, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff"
+        });
+
+        captureNode.remove();
+
+        const { jsPDF } = window.jspdf;
+        const pdfWidth = canvas.width;
+        const pdfHeight = canvas.height;
+        const pdf = new jsPDF(
+            pdfWidth > pdfHeight ? "landscape" : "portrait",
+            "pt",
+            [pdfWidth, pdfHeight]
+        );
+
+        pdf.addImage(
+            canvas.toDataURL("image/png"),
+            "PNG",
+            0,
+            0,
+            pdfWidth,
+            pdfHeight
+        );
+        pdf.save(`${sanitizeFileName(project.title)}.pdf`);
+        showToast("Project PDF downloaded.");
+    } catch (error) {
+        showToast(error.message || "Could not download project.", "error");
+    } finally {
+        if (button) {
+            button.disabled = false;
+        }
+    }
+}
+
+function closeDetailModal() {
+    detailModal.classList.remove("is-open");
+    document.body.style.overflow = "";
+}
+
 // Modal Functions
 function openLoginModal(nextAction = null) {
     pendingOwnerAction = nextAction;
@@ -309,6 +458,21 @@ function openDetailModal(project) {
                 >
             </div>
             <div class="project-detail-meta">
+                <div class="project-detail-actions">
+                    <button type="button" class="btn-primary project-detail-link project-detail-action-wide" id="downloadProjectBtn">
+                        <i class="fa-solid fa-download"></i>
+                        Download PDF
+                    </button>
+                    <a
+                        href="${project.imageUrl}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn-secondary project-detail-link project-detail-action-wide"
+                    >
+                        <i class="fa-regular fa-image"></i>
+                        Open Full Image
+                    </a>
+                </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>
                     <p style="color: var(--gray-600); line-height: 1.7;">${escapeHtml(project.description) || "No description provided."}</p>
@@ -317,32 +481,17 @@ function openDetailModal(project) {
                     <label class="form-label">Created</label>
                     <p style="color: var(--gray-500);">${formatDate(getDisplayDate(project))}</p>
                 </div>
-                <a
-                    href="${project.imageUrl}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="btn-primary project-detail-link"
-                >
-                    <i class="fa-regular fa-image"></i>
-                    Open Full Image
-                </a>
             </div>
         </div>
     `;
     detailModal.classList.add("is-open");
     document.body.style.overflow = "hidden";
-    
-    document.getElementById("closeDetailModal").addEventListener("click", () => {
-        detailModal.classList.remove("is-open");
-        document.body.style.overflow = "";
+
+    document.getElementById("downloadProjectBtn").addEventListener("click", () => {
+        downloadProjectSnapshot(project);
     });
     
-    detailModal.addEventListener("click", (e) => {
-        if (e.target === detailModal) {
-            detailModal.classList.remove("is-open");
-            document.body.style.overflow = "";
-        }
-    });
+    document.getElementById("closeDetailModal").addEventListener("click", closeDetailModal);
 }
 
 // Render Projects
@@ -625,6 +774,9 @@ closeLoginModalBtn?.addEventListener("click", closeLoginModal);
 cancelLoginBtn?.addEventListener("click", closeLoginModal);
 loginModal?.addEventListener("click", (e) => {
     if (e.target === loginModal) closeLoginModal();
+});
+detailModal?.addEventListener("click", (e) => {
+    if (e.target === detailModal) closeDetailModal();
 });
 closeModalBtn.addEventListener("click", closeModal);
 cancelUploadBtn.addEventListener("click", closeModal);

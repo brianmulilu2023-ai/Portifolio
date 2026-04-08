@@ -820,6 +820,39 @@ body {
     margin-top: var(--space-sm);
 }
 
+.project-detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.project-detail-actions .project-detail-link {
+    margin-top: 0;
+}
+
+.project-detail-action-wide {
+    width: 100%;
+    justify-content: center;
+}
+
+.project-pdf-capture {
+    position: fixed;
+    left: -20000px;
+    top: 0;
+    width: 1500px;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.project-pdf-capture-shell {
+    width: 1500px;
+    max-width: 1500px;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+}
+
 .form-group {
     margin-bottom: var(--space-md);
 }
