@@ -305,6 +305,7 @@ function openDetailModal(project) {
                     src="${project.imageUrl}"
                     alt="${escapeHtml(project.title)}"
                     class="project-detail-image"
+                    loading="eager"
                 >
             </div>
             <div class="project-detail-meta">
@@ -316,6 +317,15 @@ function openDetailModal(project) {
                     <label class="form-label">Created</label>
                     <p style="color: var(--gray-500);">${formatDate(getDisplayDate(project))}</p>
                 </div>
+                <a
+                    href="${project.imageUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn-primary project-detail-link"
+                >
+                    <i class="fa-regular fa-image"></i>
+                    Open Full Image
+                </a>
             </div>
         </div>
     `;
